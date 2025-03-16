@@ -1,8 +1,5 @@
-# ✨ Full Stack Realtime Chat App ✨
+# ✨ Ngp Alumni Chat App ✨
 
-![Demo App](/frontend/public/screenshot-for-readme.png)
-
-[Video Tutorial on Youtube](https://youtu.be/ntKkVrQqBYY)
 
 Highlights:
 
@@ -21,10 +18,6 @@ Highlights:
 MONGODB_URI=...
 PORT=5001
 JWT_SECRET=...
-
-CLOUDINARY_CLOUD_NAME=...
-CLOUDINARY_API_KEY=...
-CLOUDINARY_API_SECRET=...
 
 NODE_ENV=development
 ```
