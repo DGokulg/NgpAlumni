@@ -4,39 +4,92 @@ import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
 
 export const signup = async (req, res) => {
-  const { fullName, email, password } = req.body;
+  const { 
+    fullName, 
+    email, 
+    password, 
+    userType,
+    regNo,
+    program,
+    phoneNumber,
+    graduationYear,
+    currentJobTitle,
+    companyName,
+    industry,
+    workExperience,
+    location,
+    linkedInProfile
+  } = req.body;
+  
   try {
-    if (!fullName || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
+    // Basic validations
+    if (!fullName || !email || !password || !userType) {
+      return res.status(400).json({ message: "Required fields are missing" });
     }
 
     if (password.length < 6) {
       return res.status(400).json({ message: "Password must be at least 6 characters" });
     }
 
+    // Check if user exists
     const user = await User.findOne({ email });
-
     if (user) return res.status(400).json({ message: "Email already exists" });
 
+    // Validate user type specific fields
+    if (userType === "student" && !regNo) {
+      return res.status(400).json({ message: "Registration number is required for students" });
+    }
+
+    if (userType === "alumni" && !graduationYear) {
+      return res.status(400).json({ message: "Graduation year is required for alumni" });
+    }
+
+    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Create new user with all fields
     const newUser = new User({
       fullName,
       email,
       password: hashedPassword,
+      userType,
+      // Common optional fields
+      regNo,
+      program,
+      phoneNumber,
+      // Alumni specific fields
+      graduationYear,
+      currentJobTitle,
+      companyName,
+      industry,
+      workExperience,
+      location,
+      linkedInProfile
     });
 
     if (newUser) {
-      // generate jwt token here
+      // Generate JWT token
       generateToken(newUser._id, res);
       await newUser.save();
 
+      // Return user data (excluding sensitive info)
       res.status(201).json({
         _id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
         profilePic: newUser.profilePic,
+        userType: newUser.userType,
+        program: newUser.program,
+        regNo: newUser.regNo,
+        graduationYear: newUser.graduationYear,
+        currentJobTitle: newUser.currentJobTitle,
+        companyName: newUser.companyName,
+        industry: newUser.industry,
+        workExperience: newUser.workExperience,
+        location: newUser.location,
+        linkedInProfile: newUser.linkedInProfile,
+        phoneNumber: newUser.phoneNumber
       });
     } else {
       res.status(400).json({ message: "Invalid user data" });
@@ -68,6 +121,17 @@ export const login = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       profilePic: user.profilePic,
+      userType: user.userType,
+      program: user.program,
+      regNo: user.regNo,
+      graduationYear: user.graduationYear,
+      currentJobTitle: user.currentJobTitle,
+      companyName: user.companyName,
+      industry: user.industry,
+      workExperience: user.workExperience,
+      location: user.location,
+      linkedInProfile: user.linkedInProfile,
+      phoneNumber: user.phoneNumber
     });
   } catch (error) {
     console.log("Error in login controller", error.message);
@@ -75,6 +139,41 @@ export const login = async (req, res) => {
   }
 };
 
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const updateData = { ...req.body };
+    
+    // Only handle profile picture upload if provided and it's a valid data URL
+    if (updateData.profilePic && updateData.profilePic.startsWith('data:image')) {
+      const uploadResponse = await cloudinary.uploader.upload(updateData.profilePic);
+      updateData.profilePic = uploadResponse.secure_url;
+    } else {
+      // Remove profilePic field if it's not a valid image data URL
+      // This prevents overwriting the existing profilePic in the database
+      delete updateData.profilePic;
+    }
+    
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Return updated user without password
+    const userToReturn = updatedUser.toObject();
+    delete userToReturn.password;
+    
+    res.status(200).json(userToReturn);
+  } catch (error) {
+    console.log("error in update profile:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 export const logout = (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
@@ -82,29 +181,6 @@ export const logout = (req, res) => {
   } catch (error) {
     console.log("Error in logout controller", error.message);
     res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
-export const updateProfile = async (req, res) => {
-  try {
-    const { profilePic } = req.body;
-    const userId = req.user._id;
-
-    if (!profilePic) {
-      return res.status(400).json({ message: "Profile pic is required" });
-    }
-
-    const uploadResponse = await cloudinary.uploader.upload(profilePic);
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { profilePic: uploadResponse.secure_url },
-      { new: true }
-    );
-
-    res.status(200).json(updatedUser);
-  } catch (error) {
-    console.log("error in update profile:", error);
-    res.status(500).json({ message: "Internal server error" });
   }
 };
 

@@ -7,7 +7,7 @@ import { Users } from "lucide-react";
 const Sidebar = () => {
   const { getUsers, users, selectedUser, setSelectedUser, isUsersLoading } = useChatStore();
 
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers = [] } = useAuthStore(); // Add default empty array
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
 
   useEffect(() => {
@@ -19,6 +19,9 @@ const Sidebar = () => {
     : users;
 
   if (isUsersLoading) return <SidebarSkeleton />;
+
+  // Calculate online count safely
+  const onlineCount = (onlineUsers.length || 0) - 1;
 
   return (
     <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
@@ -38,7 +41,7 @@ const Sidebar = () => {
             />
             <span className="text-sm">Show online only</span>
           </label>
-          <span className="text-xs text-zinc-500">({onlineUsers.length - 1} online)</span>
+          <span className="text-xs text-zinc-500">({onlineCount >= 0 ? onlineCount : 0} online)</span>
         </div>
       </div>
 
@@ -84,4 +87,5 @@ const Sidebar = () => {
     </aside>
   );
 };
+
 export default Sidebar;

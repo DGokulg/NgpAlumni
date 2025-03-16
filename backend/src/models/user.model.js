@@ -20,6 +20,44 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    userType: {
+      type: String,
+      enum: ["student", "alumni"],
+      required: true
+    },
+    // Common fields
+    regNo: {
+      type: String,
+      sparse: true
+    },
+    program: {
+      type: String,
+    },
+    phoneNumber: {
+      type: String,
+    },
+    // Alumni specific fields
+    graduationYear: {
+      type: Number,
+    },
+    currentJobTitle: {
+      type: String,
+    },
+    companyName: {
+      type: String,
+    },
+    industry: {
+      type: String,
+    },
+    workExperience: {
+      type: Number,
+    },
+    location: {
+      type: String,
+    },
+    linkedInProfile: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

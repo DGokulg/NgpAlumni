@@ -24,7 +24,8 @@ app.use(
     credentials: true,
   })
 );
-
+app.use(express.json({ limit: "50mb" })); // For parsing application/json
+app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 

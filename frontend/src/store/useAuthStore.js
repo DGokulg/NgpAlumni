@@ -17,7 +17,6 @@ export const useAuthStore = create((set, get) => ({
   checkAuth: async () => {
     try {
       const res = await axiosInstance.get("/auth/check");
-
       set({ authUser: res.data });
       get().connectSocket();
     } catch (error) {
@@ -31,27 +30,44 @@ export const useAuthStore = create((set, get) => ({
   signup: async (data) => {
     set({ isSigningUp: true });
     try {
-      const res = await axiosInstance.post("/auth/signup", data);
-      set({ authUser: res.data });
+      const formattedData = {
+        ...data,
+        // Convert numeric fields to numbers
+        workExperience: data.workExperience ? Number(data.workExperience) : undefined,
+        graduationYear: data.graduationYear ? Number(data.graduationYear) : undefined
+      };
+
+      // Enhanced logging for debugging
+      console.log("[SIGNUP] Sending data:", formattedData);
+      
+      const res = await axiosInstance.post("/auth/signup", formattedData);
+      console.log("[SIGNUP] Received response:", res.data);
+      
+      // Merge response data with existing auth state
+      set(state => ({ 
+        authUser: { ...state.authUser, ...res.data } 
+      }));
+      
       toast.success("Account created successfully");
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      console.error("[SIGNUP] Error:", error.response?.data);
+      toast.error(error.response?.data?.message || "Signup failed");
     } finally {
       set({ isSigningUp: false });
     }
   },
-
+  
   login: async (data) => {
     set({ isLoggingIn: true });
     try {
       const res = await axiosInstance.post("/auth/login", data);
+      console.log("Login response data:", res.data);
       set({ authUser: res.data });
       toast.success("Logged in successfully");
-
       get().connectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Login failed");
     } finally {
       set({ isLoggingIn: false });
     }
@@ -64,22 +80,47 @@ export const useAuthStore = create((set, get) => ({
       toast.success("Logged out successfully");
       get().disconnectSocket();
     } catch (error) {
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || "Logout failed");
     }
   },
 
   updateProfile: async (data) => {
     set({ isUpdatingProfile: true });
     try {
-      const res = await axiosInstance.put("/auth/update-profile", data);
-      set({ authUser: res.data });
+      const formattedData = {
+        ...data,
+        workExperience: data.workExperience ? Number(data.workExperience) : undefined,
+        graduationYear: data.graduationYear ? Number(data.graduationYear) : undefined
+      };
+
+      // If there's no profilePic in the data, don't send it
+      // This prevents overwriting the existing profilePic when updating other fields
+      if (!formattedData.profilePic) {
+        delete formattedData.profilePic;
+      }
+
+      console.log("[PROFILE] Sending update:", formattedData);
+      const res = await axiosInstance.put("/auth/update-profile", formattedData);
+      
+      // Deep merge with existing user data
+      set(state => ({
+        authUser: { ...state.authUser, ...res.data }
+      }));
+      
       toast.success("Profile updated successfully");
     } catch (error) {
-      console.log("error in update profile:", error);
-      toast.error(error.response.data.message);
+      console.error("[PROFILE] Update error:", error.response?.data);
+      toast.error(error.response?.data?.message || "Update failed");
     } finally {
       set({ isUpdatingProfile: false });
     }
+  },
+
+  // Utility function to merge profile updates with existing user data
+  updateUserField: (fieldData) => {
+    set(state => ({
+      authUser: state.authUser ? { ...state.authUser, ...fieldData } : null
+    }));
   },
 
   connectSocket: () => {
@@ -99,6 +140,7 @@ export const useAuthStore = create((set, get) => ({
       set({ onlineUsers: userIds });
     });
   },
+  
   disconnectSocket: () => {
     if (get().socket?.connected) get().socket.disconnect();
   },
