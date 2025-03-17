@@ -1,12 +1,14 @@
 import Navbar from "./components/Navbar";
 
 import NetworkPage from "./pages/NetworkPage";
+import UserProfilePage from "./pages/UserProfilePage";
 import HomePage from "./pages/HomePage";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
 import MessagesPage from "./pages/MessagesPage"; // Add this import
+
 
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "./store/useAuthStore";
@@ -49,6 +51,7 @@ const App = () => {
         
         {/* Add these routes for the messages feature */}
         <Route path="/messages" element={authUser ? <MessagesPage /> : <Navigate to="/login" />} />
+        <Route path="/profile/:userId" element={<UserProfilePage />} />
         <Route path="/messages/:userId" element={authUser ? <MessagesPage /> : <Navigate to="/login" />} />
       </Routes>
 

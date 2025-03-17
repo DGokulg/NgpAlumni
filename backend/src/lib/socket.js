@@ -46,6 +46,27 @@ io.on("connection", (socket) => {
     socket.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
   
+  // Add message handler for debugging
+  socket.on("message", (data) => {
+    console.log("Message received:", data);
+    
+    // Ensure message format is consistent
+    const formattedMessage = {
+      ...data,
+      text: data.text || data.message || "",
+      message: data.text || data.message || "" // For compatibility with frontend
+    };
+    
+    // Log the formatted message
+    console.log("Formatted message:", formattedMessage);
+    
+    // Forward the message to intended recipient
+    const receiverSocketId = getReceiverSocketId(data.receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", formattedMessage);
+    }
+  });
+  
   // Handle disconnection
   socket.on("disconnect", () => {
     console.log("A user disconnected", socket.id);

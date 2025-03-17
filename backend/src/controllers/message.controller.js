@@ -40,21 +40,22 @@ export const getMessages = async (req, res) => {
 
 export const sendMessage = async (req, res) => {
   try {
-    const { message } = req.body;
     const { id: receiverId } = req.params;
     const senderId = req.user._id;
+    const { message } = req.body;
 
     if (!message) {
-      return res.status(400).json({ error: "Message content is required" });
+      return res.status(400).json({ error: "Message is required" });
     }
 
     const newMessage = new Message({
       senderId,
       receiverId,
-      message,
+      message
     });
 
     await newMessage.save();
+
     res.status(201).json(newMessage);
   } catch (error) {
     console.log("Error in sendMessage controller: ", error.message);

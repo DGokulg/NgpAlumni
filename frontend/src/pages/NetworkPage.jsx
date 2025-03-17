@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Link } from "react-router-dom";
-import { MessageSquare, Search, User } from "lucide-react";
+import { MessageSquare, Search, User, Filter } from "lucide-react";
 import { axiosInstance } from "../lib/axios.js";
 
 const NetworkPage = () => {
@@ -11,6 +11,7 @@ const NetworkPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [error, setError] = useState(null);
+  const [activeFilter, setActiveFilter] = useState("all"); // "all", "alumni", "student"
 
   // Fetch all users from the API
   useEffect(() => {
@@ -56,24 +57,40 @@ const NetworkPage = () => {
     }
   }, [socket]);
 
-  // Simple, direct search without debouncing
-  const handleSearchChange = (e) => {
-    const term = e.target.value;
-    setSearchTerm(term);
+  // Apply both search and filter
+  useEffect(() => {
+    let results = [...allUsers];
     
-    // Direct filtering without delay
-    if (term.trim() === "") {
-      setFilteredUsers(allUsers);
-    } else {
-      const searchLower = term.toLowerCase();
-      const results = allUsers.filter(user => 
+    // Apply type filter
+    if (activeFilter !== "all") {
+      results = results.filter(user => 
+        user.userType && user.userType.toLowerCase() === activeFilter.toLowerCase()
+      );
+    }
+    
+    // Apply search term
+    if (searchTerm.trim() !== "") {
+      const searchLower = searchTerm.toLowerCase();
+      results = results.filter(user => 
         (user.fullName && user.fullName.toLowerCase().includes(searchLower)) ||
         (user.currentJobTitle && user.currentJobTitle.toLowerCase().includes(searchLower)) ||
         (user.program && user.program.toLowerCase().includes(searchLower)) ||
         (user.companyName && user.companyName.toLowerCase().includes(searchLower))
       );
-      setFilteredUsers(results);
     }
+    
+    setFilteredUsers(results);
+  }, [allUsers, searchTerm, activeFilter]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+  };
+
+  // Handle filter change
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
   };
 
   // Check if a user is online
@@ -81,10 +98,23 @@ const NetworkPage = () => {
     return onlineUsers.includes(userId);
   };
 
-  // Clear search
-  const clearSearch = () => {
+  // Get badge color based on user type
+  const getUserTypeBadge = (userType) => {
+    if (!userType) return null;
+    
+    const type = userType.toLowerCase();
+    if (type === "alumni") {
+      return <span className="badge badge-primary">Alumni</span>;
+    } else if (type === "student") {
+      return <span className="badge badge-secondary">Student</span>;
+    }
+    return <span className="badge badge-outline capitalize">{userType}</span>;
+  };
+
+  // Clear search and filters
+  const clearFilters = () => {
     setSearchTerm("");
-    setFilteredUsers(allUsers);
+    setActiveFilter("all");
   };
 
   return (
@@ -96,25 +126,75 @@ const NetworkPage = () => {
         </p>
       </div>
 
-      {/* Search bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input
-          type="text"
-          placeholder="Search users by name, job title, or program..."
-          className="input input-bordered pl-10 w-full"
-          value={searchTerm}
-          onChange={handleSearchChange}
-        />
-        {searchTerm && (
-          <button 
-            onClick={clearSearch}
-            className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs"
-          >
-            Clear
-          </button>
-        )}
+      {/* Search and filter row */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        {/* Search bar */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search users by name, job title, or program..."
+            className="input input-bordered pl-10 w-full"
+            value={searchTerm}
+            onChange={handleSearchChange}
+          />
+          {searchTerm && (
+            <button 
+              onClick={() => setSearchTerm("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 btn btn-ghost btn-xs"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {/* Filter buttons */}
+        <div className="flex gap-2 items-center">
+          <div className="flex items-center">
+            <Filter className="mr-2 size-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filter:</span>
+          </div>
+          <div className="join">
+            <button 
+              className={`btn btn-sm join-item ${activeFilter === "all" ? "btn-active" : ""}`}
+              onClick={() => handleFilterChange("all")}
+            >
+              All
+            </button>
+            <button 
+              className={`btn btn-sm join-item ${activeFilter === "alumni" ? "btn-active" : ""}`}
+              onClick={() => handleFilterChange("alumni")}
+            >
+              Alumni
+            </button>
+            <button 
+              className={`btn btn-sm join-item ${activeFilter === "student" ? "btn-active" : ""}`}
+              onClick={() => handleFilterChange("student")}
+            >
+              Students
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Show active filters */}
+      {(activeFilter !== "all" || searchTerm) && (
+        <div className="flex items-center mb-4 gap-2">
+          <span className="text-sm">Active filters:</span>
+          {activeFilter !== "all" && (
+            <span className="badge">Type: {activeFilter}</span>
+          )}
+          {searchTerm && (
+            <span className="badge">Search: "{searchTerm}"</span>
+          )}
+          <button 
+            onClick={clearFilters}
+            className="btn btn-ghost btn-xs"
+          >
+            Clear all filters
+          </button>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center h-40">
@@ -127,16 +207,14 @@ const NetworkPage = () => {
       ) : filteredUsers.length === 0 ? (
         <div className="text-center py-10">
           <p className="text-muted-foreground">
-            {searchTerm ? `No users match "${searchTerm}"` : "No users found"}
+            No users found with the current filters
           </p>
-          {searchTerm && (
-            <button 
-              onClick={clearSearch} 
-              className="btn btn-sm btn-outline mt-2"
-            >
-              Clear search
-            </button>
-          )}
+          <button 
+            onClick={clearFilters} 
+            className="btn btn-sm btn-outline mt-2"
+          >
+            Clear all filters
+          </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -161,16 +239,18 @@ const NetworkPage = () => {
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-lg">
-                      {user.fullName}
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="font-bold text-lg">
+                        {user.fullName}
+                      </h3>
+                      {getUserTypeBadge(user.userType)}
                       {isUserOnline(user._id) && (
-                        <span className="ml-2 badge badge-success badge-sm">Online</span>
+                        <span className="badge badge-success badge-sm">Online</span>
                       )}
-                    </h3>
-                    {user.userType && (
-                      <p className="text-sm text-muted-foreground capitalize mb-1">
-                        {user.userType}
-                        {user.program && ` • ${user.program}`}
+                    </div>
+                    {user.program && (
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {user.program}
                       </p>
                     )}
                     {user.currentJobTitle && (
@@ -182,13 +262,20 @@ const NetworkPage = () => {
                   </div>
                 </div>
                 <div className="card-actions justify-end mt-2">
-                  <Link
-                    to={`/messages/${user._id}`}
-                    className="btn btn-primary btn-sm gap-2"
-                  >
-                    <MessageSquare className="size-4" />
-                    Message
-                  </Link>
+  <Link
+    to={`/profile/${user._id}`}
+    className="btn btn-outline btn-sm gap-2"
+  >
+    <User className="size-4" />
+    View Profile
+  </Link>
+  <Link
+    to={`/messages/${user._id}`}
+    className="btn btn-primary btn-sm gap-2"
+  >
+    <MessageSquare className="size-4" />
+    Message
+  </Link>
                 </div>
               </div>
             </div>
