@@ -31,6 +31,7 @@ export const getMessages = async (req, res) => {
       ],
     }).sort({ createdAt: 1 });
 
+    console.log("Messages being sent to client:", messages);
     res.status(200).json(messages);
   } catch (error) {
     console.log("Error in getMessages controller: ", error.message);
@@ -51,10 +52,11 @@ export const sendMessage = async (req, res) => {
     const newMessage = new Message({
       senderId,
       receiverId,
-      message
+      message: message  // Correctly using message field from schema
     });
 
     await newMessage.save();
+    console.log("Saved message:", newMessage);
 
     res.status(201).json(newMessage);
   } catch (error) {

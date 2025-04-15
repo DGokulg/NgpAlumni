@@ -1,19 +1,22 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import { LogOut, MessageSquare, Settings, User, Users } from "lucide-react";
+import { Briefcase, LogOut, MessageSquare, Settings, User, Users } from "lucide-react";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
-
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-base-100 border-b border-base-200 z-10">
+    <nav className="fixed top-0 left-0 right-0 bg-base-100000 border-b border-base-200 z-10">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          {/* Left section */}
+          {/* Left section with PNG logo */}
           <div className="flex items-center gap-2">
             <Link to="/" className="flex items-center gap-2">
-              <div className="bg-primary text-white p-2 rounded-md">
-                <MessageSquare className="size-5" />
+              <div className="p-1">
+                <img 
+                  src="/image.png" 
+                  alt="NGP Alumni Logo" 
+                  className="h-12 w-auto" 
+                />
               </div>
               <span className="text-xl font-bold">NGP Alumni</span>
             </Link>
@@ -31,6 +34,11 @@ const Navbar = () => {
                 <Link to="/messages" className="btn btn-ghost btn-sm">
                   <MessageSquare className="size-5" />
                   <span className="hidden md:inline">Messages</span>
+                </Link>
+                
+                <Link to="/jobs" className="btn btn-ghost btn-sm">
+                  <Briefcase className="size-5" />
+                  <span className="hidden md:inline">Jobs</span>
                 </Link>
                 
                 <Link to="/settings" className="btn btn-ghost btn-sm">

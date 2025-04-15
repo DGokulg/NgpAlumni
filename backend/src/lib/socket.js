@@ -46,15 +46,21 @@ io.on("connection", (socket) => {
     socket.emit("getOnlineUsers", Object.keys(userSocketMap));
   });
   
-  // Add message handler for debugging
+  // IMPROVED: Better message handling
   socket.on("message", (data) => {
     console.log("Message received:", data);
+    
+    // Ensure message has all required fields
+    if (!data || !data.receiverId) {
+      console.error("Invalid message format:", data);
+      return;
+    }
     
     // Ensure message format is consistent
     const formattedMessage = {
       ...data,
       text: data.text || data.message || "",
-      message: data.text || data.message || "" // For compatibility with frontend
+      message: data.message || data.text || ""
     };
     
     // Log the formatted message
@@ -63,8 +69,18 @@ io.on("connection", (socket) => {
     // Forward the message to intended recipient
     const receiverSocketId = getReceiverSocketId(data.receiverId);
     if (receiverSocketId) {
+      console.log("Forwarding message to receiver", data.receiverId, "socket:", receiverSocketId);
       io.to(receiverSocketId).emit("newMessage", formattedMessage);
+    } else {
+      console.log("Receiver not online:", data.receiverId);
     }
+    
+    // IMPORTANT: Also confirm back to sender that message was processed
+    // This helps with real-time updates even if the receiver is offline
+    socket.emit("messageSent", {
+      success: true,
+      message: formattedMessage
+    });
   });
   
   // Handle disconnection
