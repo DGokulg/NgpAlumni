@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { useAuthStore } from "../store/useAuthStore";
-import { Briefcase, LogOut, MessageSquare, Settings, User, Users } from "lucide-react";
+import { Briefcase, Calendar, LogOut, MessageSquare, Settings, User, Users } from "lucide-react";
 
 const Navbar = () => {
   const { logout, authUser } = useAuthStore();
+  const isAdmin = authUser?.role === "admin";
+
   return (
     <nav className="fixed top-0 left-0 right-0 bg-base-100000 border-b border-base-200 z-10">
       <div className="container mx-auto px-4">
@@ -41,6 +43,11 @@ const Navbar = () => {
                   <span className="hidden md:inline">Jobs</span>
                 </Link>
                 
+                <Link to="/events" className="btn btn-ghost btn-sm">
+                  <Calendar className="size-5" />
+                  <span className="hidden md:inline">Events</span>
+                </Link>
+                
                 <Link to="/settings" className="btn btn-ghost btn-sm">
                   <Settings className="size-5" />
                   <span className="hidden md:inline">Settings</span>
@@ -62,6 +69,7 @@ const Navbar = () => {
               <>
                 <Link to="/login" className="btn btn-ghost btn-sm">Login</Link>
                 <Link to="/signup" className="btn btn-primary btn-sm">Sign Up</Link>
+                <Link to="/admin-login" className="btn btn-secondary btn-sm">Admin Login</Link>
               </>
             )}
           </div>
